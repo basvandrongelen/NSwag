@@ -52,6 +52,16 @@ namespace NSwag.AspNetCore
         /// <summary>Specifies whether the "Try it out" option is enabled in Swagger UI 3.</summary>
         public bool EnableTryItOut { get; set; } = true;
 
+        /// <summary>
+        /// Gets or sets a title for the Swagger UI page.
+        /// </summary>
+        public string DocumentTitle { get; set; } = "Swagger UI";
+
+        /// <summary>
+        /// Gets or sets additional content to place in the head of the Swagger UI page.
+        /// </summary>
+        public string CustomHeadContent { get; set; } = "";
+
         /// <summary>Gets or sets a value indicating whether the Swagger specification should be validated.</summary>
         public bool ValidateSpecification { get; set; } = false;
 
@@ -115,7 +125,18 @@ namespace NSwag.AspNetCore
             foreach (var property in oauth2Settings.GetType().GetRuntimeProperties())
             {
                 var value = property.GetValue(oauth2Settings);
-                html = html.Replace("{" + property.Name + "}", value is IDictionary ? JsonConvert.SerializeObject(value) : value?.ToString() ?? "");
+                if (value is IDictionary dictionary)
+                {
+                    html = html.Replace("{" + property.Name + "}", JsonConvert.SerializeObject(dictionary));
+                }
+                else if (value is bool boolean)
+                {
+                    html = html.Replace("{" + property.Name + "}", boolean.ToString().ToLowerInvariant());
+                }
+                else
+                {
+                    html = html.Replace("{" + property.Name + "}", value?.ToString() ?? "");
+                }
             }
 
             html = html.Replace("{Urls}", !SwaggerRoutes.Any() ?
@@ -133,6 +154,8 @@ namespace NSwag.AspNetCore
 
             html = html.Replace("{CustomStyle}", GetCustomStyleHtml(request));
             html = html.Replace("{CustomScript}", GetCustomScriptHtml(request));
+            html = html.Replace("{CustomHeadContent}", CustomHeadContent);
+            html = html.Replace("{DocumentTitle}", DocumentTitle);
 
             return html;
         }

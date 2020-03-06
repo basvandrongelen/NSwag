@@ -20,8 +20,11 @@ namespace NSwag.Sample.NETCore30
         {
             services.AddMvc();
 
-            services.AddOpenApiDocument(d => 
-                d.DefaultReferenceTypeNullHandling = ReferenceTypeNullHandling.NotNull);
+            services.AddOpenApiDocument(document =>
+            {
+                document.Description = "Hello world!";
+                document.DefaultReferenceTypeNullHandling = ReferenceTypeNullHandling.NotNull;
+            });
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -41,6 +44,12 @@ namespace NSwag.Sample.NETCore30
 
             app.UseOpenApi();
             app.UseSwaggerUi3();
+            //app.UseApiverse();
+            app.UseApiverse(settings =>
+            {
+                //settings.CompareTo = "a:a:27:25:15:latest";
+                settings.ApiverseUrl = "https://localhost:5001";
+            });
         }
     }
 }

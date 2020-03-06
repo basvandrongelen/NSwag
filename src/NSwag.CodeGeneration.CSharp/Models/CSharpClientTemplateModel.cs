@@ -122,11 +122,17 @@ namespace NSwag.CodeGeneration.CSharp.Models
         /// <summary>Gets or sets the format for DateTime type method parameters.</summary>
         public string ParameterDateTimeFormat => _settings.ParameterDateTimeFormat;
 
+        /// <summary>Gets or sets the format for Date type method parameters.</summary>
+        public string ParameterDateFormat => _settings.ParameterDateFormat;
+
         /// <summary>Gets or sets a value indicating whether to expose the JsonSerializerSettings property.</summary>
         public bool ExposeJsonSerializerSettings => _settings.ExposeJsonSerializerSettings;
 
         /// <summary>Gets or sets a value indicating whether to generate the UpdateJsonSerializerSettings method.</summary>
         public bool GenerateUpdateJsonSerializerSettingsMethod => _settings.GenerateUpdateJsonSerializerSettingsMethod;
+
+        /// <summary>Gets or sets a value indicating whether to generate different request and response serialization settings (default: false).</summary>
+        public bool UseRequestAndResponseSerializationSettings => _settings.UseRequestAndResponseSerializationSettings;
 
         /// <summary>Gets or sets a value indicating whether to serialize the type information in a $type property (not recommended, also sets TypeNameHandling = Auto).</summary>
         public bool SerializeTypeInformation => _settings.SerializeTypeInformation;
@@ -159,6 +165,15 @@ namespace NSwag.CodeGeneration.CSharp.Models
                 return parameterCode;
             }
         }
+
+        /// <summary>Gets the Title.</summary>
+        public string Title => _document.Info.Title;
+
+        /// <summary>Gets the Description.</summary>
+        public string Description => _document.Info.Description;
+
+        /// <summary>Gets the API version.</summary>
+        public string Version => _document.Info.Version;
 
         private bool RequiresJsonExceptionConverter => _settings.CSharpGeneratorSettings.ExcludedTypeNames?.Contains("JsonExceptionConverter") != true &&
             _document.Operations.Any(o => o.Operation.ActualResponses.Any(r => r.Value.Schema?.InheritsSchema(_exceptionSchema) == true));
