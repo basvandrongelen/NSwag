@@ -6,8 +6,6 @@
 // <author>Rico Suter, mail@rsuter.com</author>
 //-----------------------------------------------------------------------
 
-using System.Collections.Generic;
-using System.Linq;
 using NJsonSchema;
 
 namespace NSwag.CodeGeneration
@@ -21,24 +19,35 @@ namespace NSwag.CodeGeneration
         /// <returns>The parameter name.</returns>
         public string Generate(OpenApiParameter parameter, IEnumerable<OpenApiParameter> allParameters)
         {
-            if (string.IsNullOrEmpty(parameter.Name))
-            {
-                return "unnamed";
-            }
+            var variableName = GetVariableName(parameter);
 
-            var variableName = ConversionUtilities.ConvertToLowerCamelCase(parameter.Name
-                .Replace("-", "_")
-                .Replace(".", "_")
-                .Replace("$", string.Empty)
-                .Replace("[", string.Empty)
-                .Replace("]", string.Empty), true);
-
-            if (allParameters.Count(p => p.Name == parameter.Name) > 1)
+            if (allParameters.Count(p => GetVariableName(p) == variableName) > 1)
             {
                 return variableName + parameter.Kind;
             }
 
             return variableName;
+
+            static string GetVariableName(OpenApiParameter openApiParameter)
+            {
+                var name = !string.IsNullOrEmpty(openApiParameter.OriginalName) ?
+                    openApiParameter.OriginalName : openApiParameter.Name;
+
+                if (string.IsNullOrEmpty(name))
+                {
+                    return "unnamed";
+                }
+
+                var variableName = ConversionUtilities.ConvertToLowerCamelCase(name
+                    .Replace("-", "_")
+                    .Replace(".", "_")
+                    .Replace("$", string.Empty)
+                    .Replace("@", string.Empty)
+                    .Replace("[", string.Empty)
+                    .Replace("]", string.Empty), true);
+
+                return variableName;
+            }
         }
     }
 }

@@ -1,45 +1,35 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.6;net451;netstandard2.0</TargetFrameworks>
-    <Description>NSwag: The OpenAPI/Swagger API toolchain for .NET and TypeScript</Description>
-    <Version>13.2.3</Version>
+    <TargetFrameworks>net462;netstandard2.0;net8.0;net9.0</TargetFrameworks>
     <PackageTags>Swagger Documentation AspNetCore</PackageTags>
-    <Copyright>Copyright © Rico Suter, 2020</Copyright>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>http://NSwag.org</PackageProjectUrl>
-    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
-    <SignAssembly>True</SignAssembly>
-    <AssemblyOriginatorKeyFile>../NSwag.snk</AssemblyOriginatorKeyFile>
-    <Authors>Rico Suter</Authors>
-    <PackageIconUrl>https://raw.githubusercontent.com/RicoSuter/NSwag/master/assets/NuGetIcon.png</PackageIconUrl>
-    <Company />
-    <RepositoryType>git</RepositoryType> 
-    <RepositoryUrl>https://github.com/RicoSuter/NSwag.git</RepositoryUrl> 
     <DefineConstants>$(DefineConstants);ASPNETCORE</DefineConstants>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
-  <PropertyGroup>
-    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DefineConstants>$(DefineConstants);TRACE;DEBUG</DefineConstants>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="NJsonSchema" Version="10.1.5" />
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net462' OR '$(TargetFramework)' == 'netstandard2.0' ">
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.ApiExplorer" Version="1.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="1.0.6" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Formatters.Json" Version="1.0.4" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetFramework)' != 'netcoreapp3.0' ">
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.ApiExplorer" Version="1.0.3" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="1.0.3" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.Formatters.Json" Version="1.0.3" />
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net8.0'">
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.0" />
   </ItemGroup>
-  <!--<ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp3.0' ">
-    <PackageReference Include="Microsoft.AspNetCore.App" Version="3.0.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="3.0.0" />
-  </ItemGroup>-->
-  <ItemGroup Condition="'$(TargetFramework)' == 'net45'">
-    <Reference Include="Microsoft.CSharp" />
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net9.0'">
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="9.0.0" />
   </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\NSwag.Generation\NSwag.Generation.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\NSwag.Core\Polyfills.cs" Link="Polyfills.cs" />
+  </ItemGroup>
+
 </Project>

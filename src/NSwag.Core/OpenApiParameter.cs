@@ -6,9 +6,7 @@
 // <author>Rico Suter, mail@rsuter.com</author>
 //-----------------------------------------------------------------------
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using NJsonSchema;
 
@@ -20,14 +18,15 @@ namespace NSwag
         private string _name;
         private OpenApiParameterKind _kind;
         private OpenApiParameterStyle _style;
-        private bool _isRequired = false;
+        private bool _isRequired;
         private JsonSchema _schema;
         private IDictionary<string, OpenApiExample> _examples;
         private bool _explode;
         private int? _position;
 
-        [JsonIgnore]
-        internal OpenApiOperation ParentOperation => Parent as OpenApiOperation;
+        private static readonly Regex AppJsonRegex = new Regex(@"application\/(\S+?)?\+?json;?(\S+)?");
+
+        [JsonIgnore] internal OpenApiOperation ParentOperation => Parent as OpenApiOperation;
 
         /// <summary>Gets or sets the name.</summary>
         [JsonProperty(PropertyName = "name", DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate)]
@@ -40,6 +39,10 @@ namespace NSwag
                 ParentOperation?.UpdateRequestBody(this);
             }
         }
+
+        /// <summary>Gets or sets a original name property x-originalName which is often used in code generation (default: null).</summary>
+        [JsonProperty(PropertyName = "x-originalName", DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate)]
+        public string OriginalName { get; set; }
 
         /// <summary>Gets or sets the kind of the parameter.</summary>
         [JsonProperty(PropertyName = "in", DefaultValueHandling = DefaultValueHandling.Ignore)]
@@ -94,7 +97,7 @@ namespace NSwag
         public bool AllowEmptyValue { get; set; }
 
         /// <summary>Gets or sets the description. </summary>
-        [Newtonsoft.Json.JsonProperty("description", DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate)]
+        [JsonProperty("description", DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate)]
         public override string Description
         {
             get => base.Description;
@@ -113,7 +116,7 @@ namespace NSwag
         [JsonProperty(PropertyName = "collectionFormat", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public OpenApiParameterCollectionFormat CollectionFormat { get; set; }
 
-        /// <summary>Gets or sets the headers (OpenAPI only).</summary>
+        /// <summary>Gets or sets the examples (OpenAPI only).</summary>
         [JsonProperty(PropertyName = "examples", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public IDictionary<string, OpenApiExample> Examples
         {
@@ -180,7 +183,7 @@ namespace NSwag
             {
                 if (IsNullableRaw == null)
                 {
-                    return IsRequired == false;
+                    return !IsRequired;
                 }
 
                 return IsNullableRaw.Value;
@@ -216,13 +219,12 @@ namespace NSwag
                 }
 
                 var parent = Parent as OpenApiOperation;
-                var consumes = parent?.ActualConsumes?.Any() == true ?
-                    parent.ActualConsumes :
-                    parent?.RequestBody?.Content.Keys;
+                var consumes = parent?.ActualConsumes?.Count > 0
+                    ? parent.ActualConsumes
+                    : parent?.ActualRequestBody?.Content.Keys;
 
-                return consumes?.Any() == true &&
-                       consumes.Any(p => p.Contains("application/xml")) &&
-                       consumes.Any(p => p.StartsWith("application/") && p.EndsWith("json")) == false;
+                return consumes?.Count > 0 && consumes.Any(p => p.Contains("application/xml")) &&
+                       !consumes.Any(p => AppJsonRegex.IsMatch(p));
             }
         }
 
@@ -238,20 +240,50 @@ namespace NSwag
                 }
 
                 var parent = Parent as OpenApiOperation;
-                if (parent?.ActualConsumes?.Any() == true)
+                if (parent?.ActualConsumes?.Count > 0)
                 {
                     var consumes = parent.ActualConsumes;
-                    return consumes?.Any() == true &&
-                           consumes.Any(p => p.Contains("*/*")) == false && // supports json
-                           consumes.Any(p => p.StartsWith("application/") && p.EndsWith("json")) == false;
+                    return consumes?.Count > 0
+                           && (Schema?.IsBinary != false || consumes.Contains("multipart/form-data"))
+                           && consumes?.Any(p => p.Contains("*/*")) == false
+                           && !consumes.Any(p => AppJsonRegex.IsMatch(p));
                 }
                 else
                 {
-                    var consumes = parent?.RequestBody?.Content;
+                    var consumes = parent?.ActualRequestBody?.Content;
+                    return (consumes?.Any(p => p.Key == "multipart/form-data") == true || consumes?.Any(p => p.Value.Schema?.IsBinary != false) == true)
+                           && !consumes.Any(p => p.Key.Contains("*/*") && p.Value.Schema?.IsBinary != true)
+                           && !consumes.Any(p => AppJsonRegex.IsMatch(p.Key) && p.Value.Schema?.IsBinary != true);
+                }
+            }
+        }
+
+        /// <summary>Gets a value indicating whether a binary body parameter allows multiple mime types.</summary>
+        [JsonIgnore]
+        public bool HasBinaryBodyWithMultipleMimeTypes
+        {
+            get
+            {
+                if (!IsBinaryBodyParameter)
+                {
+                    return false;
+                }
+
+                var parent = Parent as OpenApiOperation;
+                if (parent?.ActualConsumes?.Count > 0)
+                {
+                    var consumes = parent.ActualConsumes;
+                    return consumes?.Count > 0 &&
+                           (consumes.Count > 1 ||
+                            consumes.Any(p => p.Contains("*")));
+                }
+                else
+                {
+                    var consumes = parent?.ActualRequestBody?.Content;
                     return consumes?.Any() == true &&
-                           consumes.Any(p => p.Key.Contains("*/*") && !p.Value.Schema.IsBinary) == false && // supports json
-                           consumes.Any(p => p.Key.StartsWith("application/") && p.Key.EndsWith("json") && p.Value.Schema?.IsBinary != true) == false;
-                }              
+                           (consumes.Count > 1 ||
+                            consumes.Any(p => p.Key.Contains("*")));
+                }
             }
         }
     }

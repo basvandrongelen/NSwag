@@ -6,6 +6,8 @@
 // <author>Rico Suter, mail@rsuter.com</author>
 //-----------------------------------------------------------------------
 
+using NJsonSchema.CodeGeneration.CSharp;
+
 namespace NSwag.CodeGeneration.CSharp.Models
 {
     /// <summary>Base class for the CSharp models</summary>
@@ -23,10 +25,21 @@ namespace NSwag.CodeGeneration.CSharp.Models
             _settings = settings;
         }
 
+        /// <summary>Gets a value indicating whether the C#8 nullable reference types are enabled for this file.</summary>
+        public bool GenerateNullableReferenceTypes => _settings.CSharpGeneratorSettings.GenerateNullableReferenceTypes;
+
         /// <summary>Gets a value indicating whether to wrap success responses to allow full response access.</summary>
         public bool WrapResponses => _settings.WrapResponses;
 
         /// <summary>Gets the response class name.</summary>
         public string ResponseClass => _settings.ResponseClass.Replace("{controller}", _controllerName);
+
+        /// <summary>Gets a value indicating whether to use System.Text.Json</summary>
+        public bool UseSystemTextJson => _settings.CSharpGeneratorSettings.JsonLibrary == CSharpJsonLibrary.SystemTextJson;
+
+        /// <summary>Gets the JSON serializer settings type.</summary>
+        public string JsonSerializerSettingsType => _settings.CSharpGeneratorSettings.JsonLibrary == CSharpJsonLibrary.SystemTextJson
+            ? "System.Text.Json.JsonSerializerOptions"
+            : "Newtonsoft.Json.JsonSerializerSettings";
     }
 }

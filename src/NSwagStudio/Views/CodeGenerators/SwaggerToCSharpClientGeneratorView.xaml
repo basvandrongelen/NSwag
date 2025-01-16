@@ -49,6 +49,11 @@
                               Content="Generate contracts output" 
                               Margin="0,0,0,12" />
 
+                    <CheckBox IsChecked="{Binding Command.GenerateNativeRecords, Mode=TwoWay}"
+                              ToolTip="GenerateNativeRecords"
+                              Content="Generate record types"
+                              Margin="0,0,0,12" />
+
                     <StackPanel Visibility="{Binding Command.GenerateContractsOutput, Converter={StaticResource VisibilityConverter}}">
                         <TextBlock Text="Contracts Namespace"
                                    FontWeight="Bold" 
@@ -84,6 +89,10 @@
                             <CheckBox IsChecked="{Binding Command.GenerateClientClasses, Mode=TwoWay}" 
                                       ToolTip="GenerateClientClasses"
                                       Content="Generate Client Classes" Margin="0,0,0,12" />
+
+                            <CheckBox IsChecked="{Binding Command.SuppressClientClassesOutput, Mode=TwoWay}" 
+                                      ToolTip="SuppressClientClassesOutput"
+                                      Content="Suppress output of generated Client Classes" Margin="0,0,0,12" />
 
                             <StackPanel Visibility="{Binding Command.GenerateClientClasses, Converter={StaticResource VisibilityConverter}}">
                                 <TextBlock Margin="0,0,0,6" TextWrapping="Wrap">
@@ -128,6 +137,10 @@
                                           Content="Generate synchronous methods (not recommended)" 
                                           ToolTip="GenerateSyncMethods" Margin="0,0,0,12" />
 
+                                <CheckBox IsChecked="{Binding Command.GeneratePrepareRequestAndProcessResponseAsAsyncMethods, Mode=TwoWay}" 
+                                          Content="Generate PrepareRequest and ProcessResponse as asynchronous methods (if selected, methods must be defined in the base class or in the partial class)" 
+                                          ToolTip="GeneratePrepareRequestAndProcessResponseAsAsyncMethods" Margin="0,0,0,12" />
+
                                 <CheckBox IsChecked="{Binding Command.ExposeJsonSerializerSettings, Mode=TwoWay}" 
                                           Content="Expose the JsonSerializerSettings property" 
                                           ToolTip="ExposeJsonSerializerSettings" Margin="0,0,0,12" />
@@ -144,6 +157,16 @@
                                 <CheckBox IsChecked="{Binding Command.GenerateClientInterfaces, Mode=TwoWay}" 
                                           ToolTip="GenerateClientInterfaces"
                                           Content="Generate interfaces for Client classes" Margin="0,0,0,12" />
+
+                                <CheckBox IsChecked="{Binding Command.SuppressClientInterfacesOutput, Mode=TwoWay}" 
+                                          ToolTip="SuppressClientInterfacesOutput"
+                                          Content="Suppress output of generated interfaces for Client classes" Margin="0,0,0,12" />
+
+                                <TextBlock Text="Base interface for Client Interfaces (optional)" FontWeight="Bold" Margin="0,0,0,6"
+                                           Visibility="{Binding Command.GenerateClientInterfaces, Converter={StaticResource VisibilityConverter}}" />
+                                <TextBox Text="{Binding Command.ClientBaseInterface, Mode=TwoWay}"
+                                         Visibility="{Binding Command.GenerateClientInterfaces, Converter={StaticResource VisibilityConverter}}"
+                                         ToolTip="ClientBaseInterface" Margin="0,0,0,12" />
 
                                 <CheckBox IsChecked="{Binding Command.SerializeTypeInformation, Mode=TwoWay}" 
                                           ToolTip="SerializeTypeInformation"
@@ -280,6 +303,9 @@
                                                 ToolTip="ContractsOutput"
                                                 Margin="0,0,0,12" />
                             </StackPanel>
+
+                            <TextBlock Margin="0,0,0,6" Text="New Line Behavior" TextWrapping="Wrap" FontWeight="Bold" />
+                            <ComboBox SelectedItem="{Binding Command.NewLineBehavior, Mode=TwoWay}" ItemsSource="{Binding NewLineBehaviors}" Margin="0,0,0,12" />
                         </StackPanel>
                     </GroupBox>
                 </StackPanel>

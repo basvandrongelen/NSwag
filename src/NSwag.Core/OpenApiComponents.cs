@@ -6,8 +6,6 @@
 // <author>Rico Suter, mail@rsuter.com</author>
 //-----------------------------------------------------------------------
 
-using System.Collections.Generic;
-using System.Linq;
 using Newtonsoft.Json;
 using NJsonSchema;
 using NSwag.Collections;
@@ -38,6 +36,16 @@ namespace NSwag
             };
             Schemas = schemas;
 
+            var requestBodies = new ObservableDictionary<string, OpenApiRequestBody>();
+            requestBodies.CollectionChanged += (sender, args) =>
+            {
+                foreach (var path in RequestBodies.Values)
+                {
+                    path.Parent = document;
+                }
+            };
+            RequestBodies = requestBodies;
+
             var responses = new ObservableDictionary<string, OpenApiResponse>();
             responses.CollectionChanged += (sender, args) =>
             {
@@ -60,7 +68,7 @@ namespace NSwag
 
             Examples = new Dictionary<string, OpenApiExample>();
 
-            var headers = new ObservableDictionary<string, JsonSchema>();
+            var headers = new ObservableDictionary<string, OpenApiParameter>();
             headers.CollectionChanged += (sender, args) =>
             {
                 foreach (var pair in headers.ToArray())
@@ -87,6 +95,10 @@ namespace NSwag
         public IDictionary<string, JsonSchema> Schemas { get; }
 
         /// <summary>Gets or sets the responses which can be used for all operations.</summary>
+        [JsonProperty(PropertyName = "requestBodies", DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public IDictionary<string, OpenApiRequestBody> RequestBodies { get; }
+
+        /// <summary>Gets or sets the responses which can be used for all operations.</summary>
         [JsonProperty(PropertyName = "responses", DefaultValueHandling = DefaultValueHandling.Ignore)]
         public IDictionary<string, OpenApiResponse> Responses { get; }
 
@@ -100,7 +112,7 @@ namespace NSwag
 
         /// <summary>Gets or sets the types.</summary>
         [JsonProperty(PropertyName = "headers", DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public IDictionary<string, JsonSchema> Headers { get; }
+        public IDictionary<string, OpenApiParameter> Headers { get; }
 
         /// <summary>Gets or sets the security definitions.</summary>
         [JsonProperty(PropertyName = "securitySchemes", DefaultValueHandling = DefaultValueHandling.Ignore)]

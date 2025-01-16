@@ -1,7 +1,5 @@
-﻿using System;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using NJsonSchema.NewtonsoftJson.Generation;
 using NSwag.Generation.WebApi;
 using Xunit;
 
@@ -21,18 +19,22 @@ namespace NSwag.CodeGeneration.CSharp.Tests
         [Fact]
         public async Task When_response_is_file_and_stream_is_not_used_then_byte_array_is_returned()
         {
-            //// Arrange
-            var swaggerGenerator = new WebApiOpenApiDocumentGenerator(new WebApiOpenApiDocumentGeneratorSettings());
+            // Arrange
+            var swaggerGenerator = new WebApiOpenApiDocumentGenerator(new WebApiOpenApiDocumentGeneratorSettings
+            {
+                SchemaSettings = new NewtonsoftJsonSchemaGeneratorSettings()
+            });
+
             var document = await swaggerGenerator.GenerateForControllerAsync<FileDownloadController>();
 
-            //// Act
+            // Act
             var codeGen = new CSharpClientGenerator(document, new CSharpClientGeneratorSettings
             {
                 GenerateClientInterfaces = true
             });
             var code = codeGen.GenerateFile();
 
-            //// Assert
+            // Assert
             Assert.Contains("System.Threading.Tasks.Task<FileResponse> DownloadFileAsync();", code);
             Assert.Contains("ReadAsStreamAsync()", code);
         }
@@ -56,7 +58,7 @@ namespace NSwag.CodeGeneration.CSharp.Tests
               ""application/octet-stream"": {
                 ""schema"": {
                   ""type"": ""string"",
-                  ""type"": ""binary""
+                  ""format"": ""binary""
                 }
               }
             }
@@ -68,7 +70,7 @@ namespace NSwag.CodeGeneration.CSharp.Tests
 }";
             var document = await OpenApiDocument.FromJsonAsync(json);
 
-            //// Act
+            // Act
             var codeGenerator = new CSharpClientGenerator(document, new CSharpClientGeneratorSettings
             {
                 GenerateClientInterfaces = true
@@ -76,7 +78,7 @@ namespace NSwag.CodeGeneration.CSharp.Tests
             var code = codeGenerator.GenerateFile();
 
             //// Assert
-            Assert.Contains("public async System.Threading.Tasks.Task<FileResponse> RawAsync(", code);
+            Assert.Contains("public virtual async System.Threading.Tasks.Task<FileResponse> RawAsync(", code);
             Assert.Contains("var fileResponse_ = new FileResponse(", code);
         }
     }

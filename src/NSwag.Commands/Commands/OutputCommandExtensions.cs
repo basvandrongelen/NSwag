@@ -6,10 +6,7 @@
 // <author>Rico Suter, mail@rsuter.com</author>
 //-----------------------------------------------------------------------
 
-using System;
-using System.Threading.Tasks;
 using NConsole;
-using NJsonSchema.Infrastructure;
 
 #pragma warning disable 1591
 
@@ -17,40 +14,50 @@ namespace NSwag.Commands
 {
     public static class OutputCommandExtensions
     {
-        public static Task<bool> TryWriteFileOutputAsync(this IOutputCommand command, IConsoleHost host, Func<string> generator)
+        public static Task<bool> TryWriteFileOutputAsync(this IOutputCommand command, IConsoleHost host, NewLineBehavior newLineBehavior, Func<string> generator)
         {
-            return TryWriteFileOutputAsync(command, command.OutputFilePath, host, generator);
+            return TryWriteFileOutputAsync(command, command.OutputFilePath, host, newLineBehavior, generator);
         }
 
-        public static Task<bool> TryWriteDocumentOutputAsync(this IOutputCommand command, IConsoleHost host, Func<OpenApiDocument> generator)
+        public static Task<bool> TryWriteDocumentOutputAsync(this IOutputCommand command, IConsoleHost host, NewLineBehavior newLineBehavior, Func<OpenApiDocument> generator)
         {
-            return TryWriteFileOutputAsync(command, command.OutputFilePath, host, () =>
+            return TryWriteFileOutputAsync(command, command.OutputFilePath, host, newLineBehavior, () =>
                 command.OutputFilePath.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase) ? OpenApiYamlDocument.ToYaml(generator()) : generator().ToJson());
         }
 
-        public static async Task<bool> TryWriteFileOutputAsync(this IOutputCommand command, string path, IConsoleHost host, Func<string> generator)
+        public static Task<bool> TryWriteFileOutputAsync(this IOutputCommand command, string path, IConsoleHost host, NewLineBehavior newLineBehavior, Func<string> generator)
         {
             if (!string.IsNullOrEmpty(path))
             {
-                var directory = DynamicApis.PathGetDirectoryName(path);
-                if (!string.IsNullOrEmpty(directory) && DynamicApis.DirectoryExists(directory) == false)
+                var directory = Path.GetDirectoryName(path);
+                if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
                 {
-                    DynamicApis.DirectoryCreateDirectory(directory);
+                    Directory.CreateDirectory(directory);
                 }
 
                 var data = generator();
-                if (!DynamicApis.FileExists(path) || DynamicApis.FileReadAllText(path) != data)
+
+                data = data?.Replace("\r", "") ?? "";
+                data = newLineBehavior switch
                 {
-                    DynamicApis.FileWriteAllText(path, data);
+                    NewLineBehavior.Auto => data.Replace("\n", Environment.NewLine),
+                    NewLineBehavior.CRLF => data.Replace("\n", "\r\n"),
+                    _ => data
+                };
+
+                if (!File.Exists(path) || File.ReadAllText(path) != data)
+                {
+                    File.WriteAllText(path, data);
+
                     host?.WriteMessage("Code has been successfully written to file.\n");
                 }
                 else
                 {
                     host?.WriteMessage("Code has been successfully generated but not written to file (no change detected).\n");
                 }
-                return true;
+                return Task.FromResult(true);
             }
-            return false;
+            return Task.FromResult(false);
         }
     }
 }

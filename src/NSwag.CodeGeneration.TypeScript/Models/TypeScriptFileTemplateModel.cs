@@ -6,8 +6,6 @@
 // <author>Rico Suter, mail@rsuter.com</author>
 //-----------------------------------------------------------------------
 
-using System.Collections.Generic;
-using System.Linq;
 using NJsonSchema.CodeGeneration;
 using NJsonSchema.CodeGeneration.TypeScript;
 
@@ -17,7 +15,9 @@ namespace NSwag.CodeGeneration.TypeScript.Models
     public class TypeScriptFileTemplateModel
     {
         private readonly TypeScriptClientGeneratorSettings _settings;
+#pragma warning disable IDE0052
         private readonly TypeScriptTypeResolver _resolver;
+#pragma warning restore IDE0052
         private readonly string _clientCode;
         private readonly IEnumerable<CodeArtifact> _clientTypes;
         private readonly OpenApiDocument _document;
@@ -81,7 +81,7 @@ namespace NSwag.CodeGeneration.TypeScript.Models
                         .Distinct();
                 }
 
-                return new[] { _settings.ResponseClass.Replace("{controller}", string.Empty) };
+                return [_settings.ResponseClass.Replace("{controller}", string.Empty)];
             }
         }
 
@@ -90,6 +90,9 @@ namespace NSwag.CodeGeneration.TypeScript.Models
 
         /// <summary>Gets a value indicating whether to call 'transformOptions' on the base class or extension class.</summary>
         public bool UseTransformOptionsMethod => _settings.UseTransformOptionsMethod;
+
+        /// <summary>Gets a value indicating whether to include the httpContext parameter (Angular template only, default: false).</summary>
+        public bool IncludeHttpContext => _settings.IncludeHttpContext;
 
         /// <summary>Gets the clients code.</summary>
         public string Clients => _settings.GenerateClientClasses ? _clientCode : string.Empty;
@@ -101,9 +104,9 @@ namespace NSwag.CodeGeneration.TypeScript.Models
         public string ExtensionCodeImport => _extensionCode.ImportCode;
 
         /// <summary>Gets or sets the extension code to insert at the beginning.</summary>
-        public string ExtensionCodeTop => _settings.ConfigurationClass != null && _extensionCode.ExtensionClasses.ContainsKey(_settings.ConfigurationClass) ?
-            _extensionCode.ExtensionClasses[_settings.ConfigurationClass] + "\n\n" + _extensionCode.TopCode :
-            _extensionCode.TopCode;
+        public string ExtensionCodeTop => _settings.ConfigurationClass != null && _extensionCode.ExtensionClasses.TryGetValue(_settings.ConfigurationClass, out string value)
+            ? value + "\n\n" + _extensionCode.TopCode
+            : _extensionCode.TopCode;
 
         /// <summary>Gets or sets the extension code to insert at the end.</summary>
         public string ExtensionCodeBottom { get; }
@@ -126,7 +129,12 @@ namespace NSwag.CodeGeneration.TypeScript.Models
         /// <summary>Gets a value indicating whether the FileParameter interface should be rendered.</summary>
         public bool RequiresFileParameterInterface =>
             !_settings.TypeScriptGeneratorSettings.ExcludedTypeNames.Contains("FileParameter") &&
-            _document.Operations.Any(o => o.Operation.ActualParameters.Any(p => p.ActualTypeSchema.IsBinary));
+            (_document.Operations.Any(o => o.Operation.ActualParameters.Any(p => p.ActualTypeSchema.IsBinary)) ||
+             _document.Operations.Any(o => o.Operation?.ActualRequestBody?.Content?.Any(c => c.Value.Schema?.IsBinary == true ||
+                                                                                       c.Value.Schema?.ActualProperties.Any(p => p.Value.IsBinary ||
+                                                                                                                                 p.Value.Item?.IsBinary == true ||
+                                                                                                                                 p.Value.Items.Any(i => i.IsBinary)
+                                                                                                                                 ) == true) == true));
 
         /// <summary>Gets a value indicating whether the FileResponse interface should be rendered.</summary>
         public bool RequiresFileResponseInterface =>
@@ -152,6 +160,12 @@ namespace NSwag.CodeGeneration.TypeScript.Models
 
         /// <summary>Gets a value indicating whether MomentJS duration format is needed (moment-duration-format package).</summary>
         public bool RequiresMomentJSDuration => Types?.Contains("moment.duration(") == true;
+
+        /// <summary>Gets a value indicating whether the target TypeScript version supports override keyword.</summary>
+        public bool SupportsOverrideKeyword => _settings.TypeScriptGeneratorSettings.SupportsOverrideKeyword;
+
+        /// <summary>Gets a value indicating whether the target TypeScript version supports Type-Only imports</summary>
+        public bool SupportsTypeOnlyImports => _settings.TypeScriptGeneratorSettings.TypeScriptVersion >= 3.8m;
 
         private string GenerateExtensionCodeAfter()
         {

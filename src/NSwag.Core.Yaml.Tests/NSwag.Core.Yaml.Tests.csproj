@@ -1,39 +1,28 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+  
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <IsPackable>false</IsPackable>
+    <NoWarn>$(NoWarn);CA1707</NoWarn>
   </PropertyGroup>
+  
   <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.5.0" />
-    <PackageReference Include="xunit" Version="2.3.1" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
-    <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.1" />
+    <PackageReference Include="GitHubActionsTestLogger" Version="2.4.1" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
+  
   <ItemGroup>
     <ProjectReference Include="..\NSwag.Core.Yaml\NSwag.Core.Yaml.csproj" />
-    <ProjectReference Include="..\NSwag.Core\NSwag.Core.csproj" />
   </ItemGroup>
+  
   <ItemGroup>
-    <Folder Include="References\YamlReferencesTest" />
+    <Content Include="References\YamlReferencesTest\*.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="References\YamlReferencesTest\*.yaml" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="References\YamlReferencesTest\baseContract.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="References\YamlReferencesTest\baseContract.yaml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="References\YamlReferencesTest\json_contract_with_yaml_reference.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="References\YamlReferencesTest\json_contract_with_json_reference.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="References\YamlReferencesTest\yaml_contract_with_json_reference.yaml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="References\YamlReferencesTest\yaml_contract_with_yaml_reference.yaml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
+
 </Project>

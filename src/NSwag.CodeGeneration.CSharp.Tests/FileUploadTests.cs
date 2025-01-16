@@ -1,5 +1,4 @@
-﻿using System.Threading.Tasks;
-using NJsonSchema;
+﻿using NJsonSchema;
 using Xunit;
 
 namespace NSwag.CodeGeneration.CSharp.Tests
@@ -14,7 +13,7 @@ namespace NSwag.CodeGeneration.CSharp.Tests
   ""x-generator"": ""NSwag v13.0.6.0 (NJsonSchema v10.0.23.0 (Newtonsoft.Json v12.0.0.0))"",
   ""openapi"": ""3.0.0"",
   ""info"": {
-    ""title"": ""Apiverse API"",
+    ""title"": ""Apimundo API"",
     ""version"": ""1.0.0""
   },
   ""paths"": {
@@ -56,14 +55,14 @@ namespace NSwag.CodeGeneration.CSharp.Tests
 }";
             var document = await OpenApiDocument.FromJsonAsync(json, null, SchemaType.OpenApi3, null);
 
-            //// Act
+            // Act
             var codeGenerator = new CSharpClientGenerator(document, new CSharpClientGeneratorSettings
             {
                 GenerateClientInterfaces = true
             });
             var code = codeGenerator.GenerateFile();
 
-            //// Assert
+            // Assert
             Assert.Contains("var content_ = new System.Net.Http.StreamContent(body);", code);
         }
     }

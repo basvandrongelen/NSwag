@@ -6,9 +6,8 @@
 // <author>Rico Suter, mail@rsuter.com</author>
 //-----------------------------------------------------------------------
 
-using System;
-using System.Linq;
 using NJsonSchema.CodeGeneration.CSharp;
+using NSwag.Commands;
 using NSwag.Commands.CodeGeneration;
 
 namespace NSwagStudio.ViewModels.CodeGenerators
@@ -16,12 +15,12 @@ namespace NSwagStudio.ViewModels.CodeGenerators
     public class SwaggerToCSharpClientGeneratorViewModel : ViewModelBase
     {
         private string _clientCode;
-        private SwaggerToCSharpClientCommand _command = new SwaggerToCSharpClientCommand();
+        private OpenApiToCSharpClientCommand _command = new OpenApiToCSharpClientCommand();
 
         /// <summary>Gets the settings.</summary>
-        public SwaggerToCSharpClientCommand Command
+        public OpenApiToCSharpClientCommand Command
         {
-            get { return _command; }
+            get => _command;
             set
             {
                 if (Set(ref _command, value))
@@ -39,11 +38,21 @@ namespace NSwagStudio.ViewModels.CodeGenerators
             .Select(t => (CSharpClassStyle)Enum.Parse(typeof(CSharpClassStyle), t))
             .ToArray();
 
+        /// <summary>Gets the list of JSON libraries. </summary>
+        public CSharpJsonLibrary[] JsonLibraries { get; } = Enum.GetNames(typeof(CSharpJsonLibrary))
+            .Select(t => (CSharpJsonLibrary)Enum.Parse(typeof(CSharpJsonLibrary), t))
+            .ToArray();
+
+        /// <summary>Gets new line behaviors. </summary>
+        public NewLineBehavior[] NewLineBehaviors { get; } = Enum.GetNames(typeof(NewLineBehavior))
+            .Select(t => (NewLineBehavior)Enum.Parse(typeof(NewLineBehavior), t))
+            .ToArray();
+
         /// <summary>Gets or sets the client code. </summary>
         public string ClientCode
         {
-            get { return _clientCode; }
-            set { Set(ref _clientCode, value); }
+            get => _clientCode;
+            set => Set(ref _clientCode, value);
         }
     }
 }

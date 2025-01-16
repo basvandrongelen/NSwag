@@ -1,5 +1,5 @@
-﻿using System.Linq;
-using System.Threading.Tasks;
+﻿using NJsonSchema;
+using NJsonSchema.NewtonsoftJson.Generation;
 using NSwag.Generation.AspNetCore.Tests.Web.Controllers;
 using Xunit;
 
@@ -11,12 +11,12 @@ namespace NSwag.Generation.AspNetCore.Tests
         public async Task When_controller_has_extension_data_attributes_then_they_are_processed()
         {
             // Arrange
-            var settings = new AspNetCoreOpenApiDocumentGeneratorSettings();
+            var settings = new AspNetCoreOpenApiDocumentGeneratorSettings { SchemaSettings = new NewtonsoftJsonSchemaGeneratorSettings { SchemaType = SchemaType.OpenApi3 } };
 
             // Act
             var document = await GenerateDocumentAsync(settings, typeof(SwaggerExtensionDataController));
 
-            //// Assert
+            // Assert
             Assert.Equal(2, document.ExtensionData.Count);
 
             Assert.Equal("b", document.ExtensionData["a"]);
@@ -27,12 +27,12 @@ namespace NSwag.Generation.AspNetCore.Tests
         public async Task When_operation_has_extension_data_attributes_then_they_are_processed()
         {
             // Arrange
-            var settings = new AspNetCoreOpenApiDocumentGeneratorSettings();
+            var settings = new AspNetCoreOpenApiDocumentGeneratorSettings { SchemaSettings = new NewtonsoftJsonSchemaGeneratorSettings { SchemaType = SchemaType.OpenApi3 } };
 
             // Act
             var document = await GenerateDocumentAsync(settings, typeof(SwaggerExtensionDataController));
 
-            //// Assert
+            // Assert
             var extensionData = document.Operations.First().Operation.ExtensionData;
             Assert.Equal(2, extensionData.Count);
 

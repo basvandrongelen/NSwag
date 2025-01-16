@@ -6,7 +6,6 @@
 // <author>Rico Suter, mail@rsuter.com</author>
 //-----------------------------------------------------------------------
 
-using System.Linq;
 using NJsonSchema;
 using NJsonSchema.CodeGeneration;
 using NSwag.CodeGeneration.Models;
@@ -40,10 +39,7 @@ namespace NSwag.CodeGeneration.TypeScript.Models
 
             if (settings.GenerateOptionalParameters)
             {
-                parameters = parameters
-                    .OrderBy(p => p.Position ?? 0)
-                    .OrderBy(p => !p.IsRequired)
-                    .ToList();
+                parameters = [.. parameters.OrderBy(p => p.Position ?? 0).ThenBy(p => !p.IsRequired)];
             }
 
             Parameters = parameters
@@ -109,12 +105,10 @@ namespace NSwag.CodeGeneration.TypeScript.Models
         public bool IsAngular => _settings.Template == TypeScriptTemplate.Angular;
 
         /// <summary>Gets a value indicating whether to render for JQuery.</summary>
-        public bool IsJQuery => _settings.Template == TypeScriptTemplate.JQueryCallbacks ||
-                                _settings.Template == TypeScriptTemplate.JQueryPromises;
+        public bool IsJQuery => _settings.Template is TypeScriptTemplate.JQueryCallbacks or TypeScriptTemplate.JQueryPromises;
 
         /// <summary>Gets a value indicating whether to render for Fetch or Aurelia</summary>
-        public bool IsFetchOrAurelia => _settings.Template == TypeScriptTemplate.Fetch ||
-                                        _settings.Template == TypeScriptTemplate.Aurelia;
+        public bool IsFetchOrAurelia => _settings.Template is TypeScriptTemplate.Fetch or TypeScriptTemplate.Aurelia;
 
         /// <summary>Gets a value indicating whether to use HttpClient with the Angular template.</summary>
         public bool UseAngularHttpClient => IsAngular && _settings.HttpClass == HttpClass.HttpClient;
@@ -124,7 +118,7 @@ namespace NSwag.CodeGeneration.TypeScript.Models
         {
             get
             {
-                if (_operation.ActualResponses.Count(r => !HttpUtilities.IsSuccessStatusCode(r.Key)) == 0)
+                if (_operation.ActualResponses.All(r => HttpUtilities.IsSuccessStatusCode(r.Key)))
                 {
                     return "string";
                 }
@@ -132,7 +126,7 @@ namespace NSwag.CodeGeneration.TypeScript.Models
                 return string.Join(" | ", _operation.ActualResponses
                     .Where(r => !HttpUtilities.IsSuccessStatusCode(r.Key) && r.Value.Schema != null)
                     .Select(r => _generator.GetTypeName(r.Value.Schema, r.Value.IsNullable(_settings.CodeGeneratorSettings.SchemaType), "Exception"))
-                    .Concat(new[] { "string" }));
+                    .Concat(["string"]));
             }
         }
 
@@ -165,9 +159,16 @@ namespace NSwag.CodeGeneration.TypeScript.Models
             if (parameter.IsBinaryBodyParameter)
             {
                 return "Blob";
+                // TODO: Use HasBinaryBodyWithMultipleMimeTypes => how to provide content type in TS?
+                //return parameter.HasBinaryBodyWithMultipleMimeTypes ? "FileParameter" : "Blob";
             }
 
             var schema = parameter.ActualSchema;
+            if (schema.Type == JsonObjectType.Array && schema.Item.IsBinary)
+            {
+                return "FileParameter[]";
+            }
+
             if (schema.IsBinary)
             {
                 if (parameter.CollectionFormat == OpenApiParameterCollectionFormat.Multi && !schema.Type.HasFlag(JsonObjectType.Array))
@@ -176,6 +177,23 @@ namespace NSwag.CodeGeneration.TypeScript.Models
                 }
 
                 return "FileParameter";
+            }
+
+            if (_settings.TypeScriptGeneratorSettings.UseLeafType && schema.ActualDiscriminatorObject != null)
+            {
+                var types = schema.ActualDiscriminatorObject.Mapping
+                    .Select(x => new OpenApiParameter
+                    {
+                        Name = parameter.Name,
+                        Kind = parameter.Kind,
+                        IsRequired = parameter.IsRequired,
+                        IsNullableRaw = parameter.IsNullableRaw,
+                        Description = parameter.Description,
+                        Schema = x.Value
+                    })
+                    .Select(ResolveParameterType);
+
+                return string.Join(" | ", types);
             }
 
             return base.ResolveParameterType(parameter);

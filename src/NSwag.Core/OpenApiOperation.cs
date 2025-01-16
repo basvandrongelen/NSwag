@@ -6,10 +6,8 @@
 // <author>Rico Suter, mail@rsuter.com</author>
 //-----------------------------------------------------------------------
 
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using NJsonSchema;
@@ -23,13 +21,13 @@ namespace NSwag
     {
         private OpenApiRequestBody _requestBody;
 
-        private bool _disableRequestBodyUpdate = false;
-        private bool _disableBodyParameterUpdate = false;
+        private bool _disableRequestBodyUpdate;
+        private bool _disableBodyParameterUpdate;
 
         /// <summary>Initializes a new instance of the <see cref="OpenApiPathItem"/> class.</summary>
         public OpenApiOperation()
         {
-            Tags = new List<string>();
+            Tags = [];
 
             var parameters = new ObservableCollection<OpenApiParameter>();
             parameters.CollectionChanged += (sender, args) =>
@@ -113,14 +111,24 @@ namespace NSwag
             get
             {
                 var parameters = Parameters.Select(p => p.ActualParameter);
-                var allParameters = Parent?.Parameters == null ? parameters :
-                    parameters.Concat(Parent.Parameters.Select(p => p.ActualParameter))
-                    .GroupBy(p => p.Name + "|" + p.Kind)
-                    .Select(p => p.First());
+                IEnumerable<OpenApiParameter> allParameters;
+                if (Parent?.Parameters == null)
+                {
+                    allParameters = parameters;
+                }
+                else
+                {
+                    allParameters = parameters
+                        .Concat(Parent.Parameters.Select(p => p.ActualParameter))
+                        .GroupBy(p => new NameKindPair(p.Name, p.Kind))
+                        .Select(p => p.First());
+                }
 
-                return new ReadOnlyCollection<OpenApiParameter>(allParameters.ToList());
+                return allParameters.ToList();
             }
         }
+
+        private readonly record struct NameKindPair(string Name, OpenApiParameterKind ParameterKind);
 
         /// <summary>Gets or sets the HTTP Status Code/Response pairs.</summary>
         [JsonProperty(PropertyName = "responses", Order = 10, Required = Required.Always, DefaultValueHandling = DefaultValueHandling.Ignore)]
@@ -144,19 +152,23 @@ namespace NSwag
 
         /// <summary>Gets or sets the servers (OpenAPI only).</summary>
         [JsonProperty(PropertyName = "servers", Order = 15, DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate)]
-        public ICollection<OpenApiServer> Servers { get; set; } = new Collection<OpenApiServer>();
+        public ICollection<OpenApiServer> Servers { get; set; } = [];
 
         /// <summary>Gets the list of MIME types the operation can consume, either from the operation or from the <see cref="OpenApiDocument"/>.</summary>
         [JsonIgnore]
-        public IEnumerable<string> ActualConsumes => Consumes ?? Parent.Parent.Consumes;
+        public ICollection<string> ActualConsumes => Consumes ?? Parent.Parent.Consumes;
 
         /// <summary>Gets the list of MIME types the operation can produce, either from the operation or from the <see cref="OpenApiDocument"/>.</summary>
         [JsonIgnore]
-        public IEnumerable<string> ActualProduces => Produces ?? Parent.Parent.Produces;
+        public ICollection<string> ActualProduces => Produces ?? Parent.Parent.Produces;
 
         /// <summary>Gets the actual schemes, either from the operation or from the <see cref="OpenApiDocument"/>.</summary>
         [JsonIgnore]
-        public IEnumerable<OpenApiSchema> ActualSchemes => Schemes ?? Parent.Parent.Schemes;
+        public ICollection<OpenApiSchema> ActualSchemes => Schemes ?? Parent.Parent.Schemes;
+
+        /// <summary>Gets the response body and dereferences it if necessary.</summary>
+        [JsonIgnore]
+        public OpenApiRequestBody ActualRequestBody => RequestBody?.ActualRequestBody;
 
         /// <summary>Gets the responses from the operation and from the <see cref="OpenApiDocument"/> and dereferences them if necessary.</summary>
         [JsonIgnore]
@@ -172,7 +184,7 @@ namespace NSwag
         {
             if (Consumes == null)
             {
-                Consumes = new List<string> { mimeType };
+                Consumes = [mimeType];
             }
             else if (!Consumes.Contains(mimeType))
             {
@@ -212,11 +224,7 @@ namespace NSwag
 
                     if (parameter.Kind == OpenApiParameterKind.Body)
                     {
-                        if (RequestBody == null)
-                        {
-                            RequestBody = new OpenApiRequestBody();
-                        }
-
+                        RequestBody ??= new OpenApiRequestBody();
                         RequestBody.Name = parameter.Name;
                         RequestBody.Position = parameter.Position;
                         RequestBody.Description = parameter.Description;

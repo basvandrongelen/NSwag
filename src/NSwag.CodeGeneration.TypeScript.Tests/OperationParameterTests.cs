@@ -1,11 +1,10 @@
-﻿using System;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using NJsonSchema;
-using NJsonSchema.Generation;
 using NSwag.Generation.WebApi;
 using Xunit;
+using NJsonSchema.NewtonsoftJson.Generation;
 
 namespace NSwag.CodeGeneration.TypeScript.Tests
 {
@@ -16,11 +15,12 @@ namespace NSwag.CodeGeneration.TypeScript.Tests
             [Route("foos/")]
             public Foo[] GetFoos([FromUri] Bar[] bars)
             {
-                return new Foo[0];
+                return [];
             }
         }
 
-        public class FromUriAttribute : Attribute { }
+        [AttributeUsage(AttributeTargets.Class | AttributeTargets.Parameter)]
+        public class FromUriAttribute : Attribute;
 
         public enum Bar
         {
@@ -38,19 +38,27 @@ namespace NSwag.CodeGeneration.TypeScript.Tests
         [Fact]
         public async Task When_query_parameter_is_enum_array_then_the_enum_is_referenced()
         {
-            //// Arrange
+            var serializerSettings = new JsonSerializerSettings
+            {
+                Converters = [new StringEnumConverter()]
+            };
+
+            // Arrange
             var settings = new WebApiOpenApiDocumentGeneratorSettings
             {
                 DefaultUrlTemplate = "api/{controller}/{action}/{id}",
-                DefaultEnumHandling = EnumHandling.String,
-                DefaultPropertyNameHandling = PropertyNameHandling.Default,
-                SchemaType = SchemaType.Swagger2,
+                SchemaSettings = new NewtonsoftJsonSchemaGeneratorSettings
+                {
+                    SerializerSettings = serializerSettings,
+                    SchemaType = SchemaType.Swagger2
+                }
             };
             var generator = new WebApiOpenApiDocumentGenerator(settings);
 
-            //// Act
+            // Act
             var document = await generator.GenerateForControllerAsync<FooController>();
             var json = document.ToJson();
+            Assert.NotNull(json);
 
             var clientSettings = new TypeScriptClientGeneratorSettings
             {
@@ -61,7 +69,7 @@ namespace NSwag.CodeGeneration.TypeScript.Tests
             var gen = new TypeScriptClientGenerator(document, clientSettings);
             var code = gen.GenerateFile();
 
-            //// Assert
+            // Assert
             Assert.NotNull(document.Operations.First().Operation.Parameters.First().Item.Reference);
             Assert.Contains("getFoos(bars: Bar[], ", code);
         }

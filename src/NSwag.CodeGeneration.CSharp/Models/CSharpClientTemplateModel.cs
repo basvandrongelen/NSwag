@@ -6,8 +6,6 @@
 // <author>Rico Suter, mail@rsuter.com</author>
 //-----------------------------------------------------------------------
 
-using System.Collections.Generic;
-using System.Linq;
 using NJsonSchema;
 using NJsonSchema.CodeGeneration.CSharp;
 
@@ -83,6 +81,18 @@ namespace NSwag.CodeGeneration.CSharp.Models
         /// <summary>Gets a value indicating whether to generate client interfaces.</summary>
         public bool GenerateClientInterfaces => _settings.GenerateClientInterfaces;
 
+        /// <summary>Gets a value indicating whether to generate the output of client interfaces.</summary>
+        public bool SuppressClientInterfacesOutput => _settings.SuppressClientInterfacesOutput;
+
+        /// <summary>Gets a value indicating whether to generate the output of client classes.</summary>
+        public bool SuppressClientClassesOutput => _settings.SuppressClientClassesOutput;
+
+        /// <summary>Gets client base interface.</summary>
+        public string ClientBaseInterface => _settings.ClientBaseInterface;
+
+        /// <summary>Gets a value indicating whether client interface has a base interface.</summary>
+        public bool HasClientBaseInterface => !string.IsNullOrEmpty(ClientBaseInterface);
+
         /// <summary>Gets a value indicating whether the document has a BaseUrl specified.</summary>
         public bool HasBaseUrl => !string.IsNullOrEmpty(BaseUrl);
 
@@ -140,31 +150,35 @@ namespace NSwag.CodeGeneration.CSharp.Models
         /// <summary>Gets or sets the null value used for query parameters which are null.</summary>
         public string QueryNullValue => _settings.QueryNullValue;
 
+        /// <summary>
+        /// Gets or sets a value indicating whether to create PrepareRequest and ProcessResponse as async methods, or as partial synchronous methods.
+        /// If value is set to true, PrepareRequestAsync and ProcessResponseAsync methods must be implemented as part of the client base class (if it has one) or as part of the partial client class.
+        /// If value is set to false, PrepareRequest and ProcessResponse methods will be partial methods, and implement them is optional.
+        /// </summary>
+        public bool GeneratePrepareRequestAndProcessResponseAsAsyncMethods => _settings.GeneratePrepareRequestAndProcessResponseAsAsyncMethods;
+
         /// <summary>Gets the JSON serializer parameter code.</summary>
         public string JsonSerializerParameterCode
         {
             get
             {
-                // TODO: Fix this in NJS (remove ", ", cleanup)
                 var parameterCode = CSharpJsonSerializerGenerator.GenerateJsonSerializerParameterCode(
-                    _settings.CSharpGeneratorSettings, RequiresJsonExceptionConverter ? new[] { "JsonExceptionConverter" } : null);
+                    _settings.CSharpGeneratorSettings, RequiresJsonExceptionConverter ? jsonExceptionConverterArray : null);
 
-                if (string.IsNullOrEmpty(parameterCode))
+                if (!parameterCode.Contains("new Newtonsoft.Json.JsonSerializerSettings"))
                 {
-                    parameterCode = "new Newtonsoft.Json.JsonSerializerSettings()";
-                }
-                else if(!parameterCode.Contains("new Newtonsoft.Json.JsonSerializerSettings"))
-                {
-                    parameterCode = "new Newtonsoft.Json.JsonSerializerSettings { Converters = " + parameterCode.Substring(2) + " }";
-                }
-                else
-                {
-                    parameterCode = parameterCode.Substring(2);
+                    parameterCode = _settings.CSharpGeneratorSettings.JsonLibrary == CSharpJsonLibrary.NewtonsoftJson ?
+                        "new Newtonsoft.Json.JsonSerializerSettings { Converters = " + parameterCode + " }" :
+                        parameterCode;
                 }
 
                 return parameterCode;
             }
         }
+
+        /// <summary>Gets the JSON converters array code.</summary>
+        public string JsonConvertersArrayCode
+            => CSharpJsonSerializerGenerator.GenerateJsonConvertersArrayCode(_settings.CSharpGeneratorSettings, RequiresJsonExceptionConverter ? jsonExceptionConverterArray : null);
 
         /// <summary>Gets the Title.</summary>
         public string Title => _document.Info.Title;
@@ -175,7 +189,14 @@ namespace NSwag.CodeGeneration.CSharp.Models
         /// <summary>Gets the API version.</summary>
         public string Version => _document.Info.Version;
 
-        private bool RequiresJsonExceptionConverter => _settings.CSharpGeneratorSettings.ExcludedTypeNames?.Contains("JsonExceptionConverter") != true &&
+        /// <summary>Gets the extension data.</summary>
+        public IDictionary<string, object> ExtensionData => _document.ExtensionData;
+
+        private bool RequiresJsonExceptionConverter =>
+            _settings.CSharpGeneratorSettings.JsonLibrary == CSharpJsonLibrary.NewtonsoftJson &&
+            _settings.CSharpGeneratorSettings.ExcludedTypeNames?.Contains("JsonExceptionConverter") != true &&
             _document.Operations.Any(o => o.Operation.ActualResponses.Any(r => r.Value.Schema?.InheritsSchema(_exceptionSchema) == true));
+
+        private static readonly string[] jsonExceptionConverterArray = ["JsonExceptionConverter"];
     }
 }

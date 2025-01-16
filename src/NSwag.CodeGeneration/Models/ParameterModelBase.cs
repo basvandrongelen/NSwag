@@ -6,11 +6,8 @@
 // <author>Rico Suter, mail@rsuter.com</author>
 //-----------------------------------------------------------------------
 
-using System;
 using NJsonSchema;
 using NJsonSchema.CodeGeneration;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace NSwag.CodeGeneration.Models
 {
@@ -98,23 +95,14 @@ namespace NSwag.CodeGeneration.Models
         /// <summary>Gets a value indicating whether the parameter is a deep object (OpenAPI 3).</summary>
         public bool IsDeepObject => _parameter.Style == OpenApiParameterStyle.DeepObject;
 
+        /// <summary>Gets a value indicating whether the parameter has form style.</summary>
+        public bool IsForm => _parameter.Style == OpenApiParameterStyle.Form;
+
         /// <summary>Gets the contained value property names (OpenAPI 3).</summary>
-        public IEnumerable<PropertyModel> PropertyNames
-        {
-            get
-            {
-                return _properties.Where(p => !p.IsCollection);
-            }
-        }
+        public IEnumerable<PropertyModel> PropertyNames => _properties.Where(p => !p.IsCollection);
 
         /// <summary>Gets the contained collection property names (OpenAPI 3).</summary>
-        public IEnumerable<PropertyModel> CollectionPropertyNames
-        {
-            get
-            {
-                return _properties.Where(p => p.IsCollection);
-            }
-        }
+        public IEnumerable<PropertyModel> CollectionPropertyNames => _properties.Where(p => p.IsCollection);
 
         /// <summary>Gets a value indicating whether the parameter has a description.</summary>
         public bool HasDescription => !string.IsNullOrEmpty(Description);
@@ -132,7 +120,7 @@ namespace NSwag.CodeGeneration.Models
         public bool IsNullable => _parameter.IsNullable(_settings.SchemaType);
 
         /// <summary>Gets a value indicating whether the parameter is optional (i.e. not required).</summary>
-        public bool IsOptional => _parameter.IsRequired == false;
+        public bool IsOptional => !_parameter.IsRequired;
 
         /// <summary>Gets a value indicating whether the parameter has a description or is optional.</summary>
         public bool HasDescriptionOrIsOptional => HasDescription || !IsRequired;
@@ -142,6 +130,9 @@ namespace NSwag.CodeGeneration.Models
 
         /// <summary>Gets a value indicating whether this is an XML body parameter.</summary>
         public bool IsXmlBodyParameter => _parameter.IsXmlBodyParameter;
+
+        /// <summary>Gets a value indicating whether this is an binary body parameter.</summary>
+        public bool IsBinaryBodyParameter => _parameter.IsBinaryBodyParameter;
 
         /// <summary>Gets a value indicating whether the parameter is of type date.</summary>
         public bool IsDate =>
@@ -162,10 +153,13 @@ namespace NSwag.CodeGeneration.Models
         public bool IsStringArray => IsArray && Schema.Item?.ActualSchema.Type.HasFlag(JsonObjectType.String) == true;
 
         /// <summary>Gets a value indicating whether this is a file parameter.</summary>
-        public bool IsFile => Schema.IsBinary;
+        public bool IsFile => Schema.IsBinary || (IsArray && Schema?.Item?.IsBinary == true);
 
         /// <summary>Gets a value indicating whether the parameter is a binary body parameter.</summary>
         public bool IsBinaryBody => _parameter.IsBinaryBodyParameter;
+
+        /// <summary>Gets a value indicating whether a binary body parameter allows multiple mime types.</summary>
+        public bool HasBinaryBodyWithMultipleMimeTypes => _parameter.HasBinaryBodyWithMultipleMimeTypes;
 
         /// <summary>Gets a value indicating whether the parameter is of type dictionary.</summary>
         public bool IsDictionary => Schema.IsDictionary;
@@ -190,6 +184,9 @@ namespace NSwag.CodeGeneration.Models
             (Schema.Item?.ActualSchema.Type == JsonObjectType.Object ||
              Schema.Item?.ActualSchema.IsAnyType == true);
 
+        /// <summary>Gets a value indicating whether the parameter is of type object</summary>
+        public bool IsObject => Schema.ActualSchema.Type == JsonObjectType.Object;
+
         /// <summary>Gets a value indicating whether the parameter is of type object.</summary>
         public bool IsBody => Kind == OpenApiParameterKind.Body;
 
@@ -198,6 +195,9 @@ namespace NSwag.CodeGeneration.Models
 
         /// <summary>Gets a value indicating whether the parameter is supplied through the request headers.</summary>
         public bool IsHeader => Kind == OpenApiParameterKind.Header;
+
+        /// <summary>Gets a value indicating whether the parameter allows empty values.</summary>
+        public bool AllowEmptyValue => _parameter.AllowEmptyValue;
 
         /// <summary>Gets the operation extension data.</summary>
         public IDictionary<string, object> ExtensionData => _parameter.ExtensionData;
